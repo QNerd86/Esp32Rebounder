@@ -61,17 +61,8 @@ void setup() {
 
 void loop() {
   bool shockSensHit = digitalRead(SCHOCK_SENS_PIN);
-  bool onTheRow = (counter == deviceNumber);
-  
-  if (doConnect == true) {
-    if (connectToServer()) {
-      Serial.println("We are now connected to the BLE Server.");
-    } else {
-      Serial.println("We have failed to connect to the server; there is nothin more we will do.");
-    }
-    doConnect = false;
-  }
-
+  bool onTheRow = (counter == deviceNumber && connected);
+  //StateMachine
   if (connected) {
 
     if (shockSensHit) {
@@ -108,16 +99,13 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
     for (int i = 1; i < length; i++) {
       counter = counter | (pData[i] << i * 8);
     }
-
-    // print to Serial
-    // Serial.print("Characteristic 1 (Notify) from server: ");
-    // Serial.println(counter);
   }
 }
 
 // Callback function that is called whenever a client is connected or disconnected
 class MyClientCallback : public BLEClientCallbacks {
   void onConnect(BLEClient* pclient) {
+    doConnect = false;
   }
 
   void onDisconnect(BLEClient* pclient) {

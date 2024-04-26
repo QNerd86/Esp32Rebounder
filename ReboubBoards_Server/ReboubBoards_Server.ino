@@ -22,11 +22,17 @@ BLE2902* pBLE2902_4;                          // Pointer to BLE2902 of Character
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
+bool deviceConnected1 = false;
+bool deviceConnected2 = false;
+bool deviceConnected3 = false;
+
 uint32_t value = 0;
 uint32_t connectedClientsCounter = 0;
 uint32_t deviceNumber = 0;
 uint32_t baseColor = ring.Color(0, 0, 255);
 uint32_t counter = 0;
+
+String actualValue1;
 
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID_1 "beb5483e-36e1-4688-b7f5-ea07361b26a8"
@@ -40,15 +46,43 @@ class MyServerCallbacks : public BLEServerCallbacks {
   void onConnect(BLEServer* pServer) {
     deviceConnected = true;
     connectedClientsCounter++;
+    Serial.println("a client connected " + String(connectedClientsCounter));
+
+    delay(100);
     if (connectedClientsCounter < 3) {
       BLEDevice::startAdvertising();
     }
+    WhoIsConnected();
   };
 
   void onDisconnect(BLEServer* pServer) {
     connectedClientsCounter--;
     deviceConnected = (connectedClientsCounter > 0);
     BLEDevice::startAdvertising();
+    Serial.println("Client disconnected " + String(connectedClientsCounter));
+    delay(100);
+    WhoIsConnected();
+  }
+  void WhoIsConnected() {
+    std::string rxValue_1 = pCharacteristic_2->getValue();
+    std::string rxValue_2 = pCharacteristic_3->getValue();
+    std::string rxValue_3 = pCharacteristic_4->getValue();
+
+    deviceConnected1 = (rxValue_1.c_str() != "");
+    deviceConnected2 = (rxValue_2.c_str() != "");
+    deviceConnected3 = (rxValue_3.c_str() != "");
+
+
+
+    Serial.print("Client 1 :");
+    Serial.print(rxValue_1.c_str());
+    Serial.println(deviceConnected1);
+    Serial.print("Client 2 :");
+    Serial.print(rxValue_2.c_str());
+    Serial.println(deviceConnected2);
+    Serial.print("Client 3 :");
+    Serial.print(rxValue_3.c_str());
+    Serial.println(deviceConnected3);
   }
 };
 
@@ -72,53 +106,51 @@ void setup() {
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0);  // set value to 0x00 to not advertise this parameter
   BLEDevice::startAdvertising();
+  pCharacteristic_2->setValue("null");
+  pCharacteristic_3->setValue("null");
+  pCharacteristic_4->setValue("null");
 }
 
 void loop() {
 
   bool shockSensHit = digitalRead(SCHOCK_SENS_PIN);
-  Serial.println(counter);
+  bool count = false;
+  //Serial.println(counter);
 
   // notify changed value
   if (deviceConnected) {
     pCharacteristic_1->setValue(counter);
     pCharacteristic_1->notify();
-
+    delay(10);
     if (counter == 0 && shockSensHit) {
-      Serial.print("(counter == 1 && shockSensHit)  - ");
-      Serial.println(counter);
-      counter++;
+      Serial.println("(counter == 1 && shockSensHit)  - ");
+      count = true;
     }
     if (counter == 1) {
-      std::string rxValue_1 = pCharacteristic_2->getValue();
-      if (rxValue_1 == "Treffer") {
+      if (GetValue1() == "Treffer") {
         Serial.println("rxValue_1.c_str()==Treffer");
-        counter++;
-      }
-      if (rxValue_1 == "") {
-        counter++;
+        count = true;
       }
     }
     if (counter == 2) {
-      std::string rxValue_2 = pCharacteristic_3->getValue();
-      if (rxValue_2 == "Treffer") {
+      if (GetValue2() == "Treffer") {
         Serial.println("rxValue_2.c_str()==Treffer");
-        counter++;
-      }
-      if (rxValue_2 == "") {
-        counter++;
+        count = true;
       }
     }
     if (counter == 3) {
-      std::string rxValue_3 = pCharacteristic_4->getValue();
-      if (rxValue_3 == "Treffer") {
+      if (GetValue3() == "Treffer") {
         Serial.println("rxValue_3.c_str()==Treffer");
-        counter = 0;
-      }
-      if (rxValue_3 == "") {
-        counter = 0;
+        count = true;
       }
     }
+
+    if(count)
+    {
+      counter++;
+      counter = counter % 4;
+    }
+
     if (counter == 0) {
       colorWipe(baseColor, 0, 12);
     } else {
@@ -195,4 +227,53 @@ void colorWipe(uint32_t color, int wait, int count) {
     ring.show();
     delay(wait);
   }
+}
+
+String GetValue1() {
+  int retrieCounter = 0;
+  std::string rxValue_1 = pCharacteristic_2->getValue();
+  while (rxValue_1 == "null" && retrieCounter < 60) {
+    delay(50);
+    rxValue_1 = pCharacteristic_2->getValue();
+    retrieCounter++;
+  }
+  Serial.print("GetValue1 retries " + String(retrieCounter));
+  Serial.println(rxValue_1.c_str());
+  pCharacteristic_2->setValue("null");
+  if (retrieCounter >= 60)
+    return "Treffer";
+  return rxValue_1.c_str();
+}
+
+String GetValue2() {
+  int retrieCounter = 0;
+  std::string rxValue_2 = pCharacteristic_3->getValue();
+  while (rxValue_2 == "null" && retrieCounter < 60) {
+    delay(50);
+    rxValue_2 = pCharacteristic_3->getValue();
+    retrieCounter++;
+  }
+  Serial.print("GetValue2 retries " + String(retrieCounter));
+  Serial.println(rxValue_2.c_str());
+  pCharacteristic_3->setValue("null");
+
+  if (retrieCounter >= 60)
+    return "Treffer";
+  return rxValue_2.c_str();
+}
+
+String GetValue3() {
+  int retrieCounter = 0;
+  std::string rxValue_3 = pCharacteristic_4->getValue();
+  while (rxValue_3 == "null" && retrieCounter < 100) {
+    delay(50);
+    rxValue_3 = pCharacteristic_4->getValue();
+    retrieCounter++;
+  }
+  Serial.print("GetValue3 retries " + String(retrieCounter));
+  Serial.println(rxValue_3.c_str());
+  pCharacteristic_3->setValue("null");
+  if (retrieCounter >= 60)
+    return "Treffer";
+  return rxValue_3.c_str();
 }
