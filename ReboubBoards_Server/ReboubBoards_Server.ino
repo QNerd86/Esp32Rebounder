@@ -48,7 +48,6 @@ class MyServerCallbacks : public BLEServerCallbacks {
     connectedClientsCounter++;
     Serial.println("a client connected " + String(connectedClientsCounter));
 
-    delay(100);
     if (connectedClientsCounter < 3) {
       BLEDevice::startAdvertising();
     }
@@ -60,29 +59,6 @@ class MyServerCallbacks : public BLEServerCallbacks {
     deviceConnected = (connectedClientsCounter > 0);
     BLEDevice::startAdvertising();
     Serial.println("Client disconnected " + String(connectedClientsCounter));
-    delay(100);
-    WhoIsConnected();
-  }
-  void WhoIsConnected() {
-    std::string rxValue_1 = pCharacteristic_2->getValue();
-    std::string rxValue_2 = pCharacteristic_3->getValue();
-    std::string rxValue_3 = pCharacteristic_4->getValue();
-
-    deviceConnected1 = (rxValue_1.c_str() != "");
-    deviceConnected2 = (rxValue_2.c_str() != "");
-    deviceConnected3 = (rxValue_3.c_str() != "");
-
-
-
-    Serial.print("Client 1 :");
-    Serial.print(rxValue_1.c_str());
-    Serial.println(deviceConnected1);
-    Serial.print("Client 2 :");
-    Serial.print(rxValue_2.c_str());
-    Serial.println(deviceConnected2);
-    Serial.print("Client 3 :");
-    Serial.print(rxValue_3.c_str());
-    Serial.println(deviceConnected3);
   }
 };
 
