@@ -208,7 +208,7 @@ void colorWipe(uint32_t color, int wait, int count) {
 String GetValue1() {
   int retrieCounter = 0;
   std::string rxValue_1 = pCharacteristic_2->getValue();
-  while (rxValue_1 == "null" && retrieCounter < 60) {
+  while (rxValue_1 == "null" && retrieCounter < 20) {
     delay(50);
     rxValue_1 = pCharacteristic_2->getValue();
     retrieCounter++;
@@ -216,7 +216,7 @@ String GetValue1() {
   Serial.print("GetValue1 retries " + String(retrieCounter));
   Serial.println(rxValue_1.c_str());
   pCharacteristic_2->setValue("null");
-  if (retrieCounter >= 60)
+  if (retrieCounter >= 20)
     return "Treffer";
   return rxValue_1.c_str();
 }
@@ -224,7 +224,7 @@ String GetValue1() {
 String GetValue2() {
   int retrieCounter = 0;
   std::string rxValue_2 = pCharacteristic_3->getValue();
-  while (rxValue_2 == "null" && retrieCounter < 60) {
+  while (rxValue_2 == "null" && retrieCounter < 20) {
     delay(50);
     rxValue_2 = pCharacteristic_3->getValue();
     retrieCounter++;
@@ -233,7 +233,7 @@ String GetValue2() {
   Serial.println(rxValue_2.c_str());
   pCharacteristic_3->setValue("null");
 
-  if (retrieCounter >= 60)
+  if (retrieCounter >= 20)
     return "Treffer";
   return rxValue_2.c_str();
 }
@@ -241,7 +241,7 @@ String GetValue2() {
 String GetValue3() {
   int retrieCounter = 0;
   std::string rxValue_3 = pCharacteristic_4->getValue();
-  while (rxValue_3 == "null" && retrieCounter < 100) {
+  while (rxValue_3 == "null" && retrieCounter < 20) {
     delay(50);
     rxValue_3 = pCharacteristic_4->getValue();
     retrieCounter++;
@@ -249,7 +249,7 @@ String GetValue3() {
   Serial.print("GetValue3 retries " + String(retrieCounter));
   Serial.println(rxValue_3.c_str());
   pCharacteristic_3->setValue("null");
-  if (retrieCounter >= 60)
+  if (retrieCounter >= 20)
     return "Treffer";
   return rxValue_3.c_str();
 }

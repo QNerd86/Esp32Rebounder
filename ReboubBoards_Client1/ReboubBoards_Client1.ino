@@ -21,10 +21,13 @@ std::string msg = "Red";
 static boolean doConnect = false;
 static boolean connected = false;
 static boolean doScan = false;
+static boolean shockSensHit = false;
+static boolean onTheRow = false;
 
 static BLEAdvertisedDevice* myDevice;
 BLERemoteCharacteristic* pRemoteChar_1;
 BLERemoteCharacteristic* pRemoteChar_2;
+
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
     Serial.print("BLE Advertised Device found: ");
@@ -37,6 +40,10 @@ class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
     }
   }
 };
+
+
+
+//- - - - - - - - - BaseMethods - - - - - - - - -
 
 void setup() {
   Serial.begin(115200);
@@ -56,39 +63,33 @@ void setup() {
   pBLEScan->setWindow(449);
   pBLEScan->setActiveScan(true);
   pBLEScan->start(5, false);
+  colorWipe(ring.Color(255, 255, 255), 0, 2);
   Serial.print("End of setup.");
 }  // End of setup.
 
 void loop() {
-  bool shockSensHit = digitalRead(SCHOCK_SENS_PIN);
-  bool onTheRow = (counter == deviceNumber && connected);
-  //StateMachine
+  //Eingabe
+  shockSensHit = digitalRead(SCHOCK_SENS_PIN);
+  onTheRow = (counter == deviceNumber && connected);
 
+  //Verarbeitung
   if (connected) {
-
-    if (shockSensHit) {
-      msg = "Treffer";
-      pRemoteChar_2->writeValue(msg, msg.length());
-      pRemoteChar_2->setValue("null");
-    } else {
-      msg = "Kein Treffer";
-      pRemoteChar_2->writeValue(msg, msg.length());
-    }
-  } else {
-    Serial.println("not connected");
-    if (doScan) {
-      BLEDevice::getScan()->start(0);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
-    }
+    SendMessageToServer();
+  }
+  if (!connected) {
+    TryToConnect();
   }
 
-  
-  if (onTheRow) {
-    colorWipe(baseColor, 0, 12);
-  } else {
-    colorWipe(ring.Color(0, 0, 0), 0, 1);
-  }
+  //Ausabge
+  SetLEDRing();
 }
 
+
+
+
+
+
+//- - - - - - - - - BLE Methods - - - - - - - - -
 // Callback function for Notify function
 static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
                            uint8_t* pData,
@@ -103,20 +104,19 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
     }
   }
 }
-
-// Callback function that is called whenever a client is connected or disconnected
 class MyClientCallback : public BLEClientCallbacks {
   void onConnect(BLEClient* pclient) {
     doConnect = false;
+    Serial.println("onConnect");
   }
 
   void onDisconnect(BLEClient* pclient) {
     connected = false;
+    doScan = true;
     Serial.println("onDisconnect");
+    colorWipe(ring.Color(255, 255, 255), 0, 1);
   }
 };
-
-// Function that is run whenever the server is connected
 bool connectToServer() {
   Serial.print("Forming a connection to ");
   Serial.println(myDevice->getAddress().toString().c_str());
@@ -155,8 +155,6 @@ bool connectToServer() {
   }
   return true;
 }
-
-// Function to chech Characteristic
 bool connectCharacteristic(BLERemoteService* pRemoteService, BLERemoteCharacteristic* l_BLERemoteChar) {
   // Obtain a reference to the characteristic in the service of the remote BLE server.
   if (l_BLERemoteChar == nullptr) {
@@ -174,14 +172,59 @@ bool connectCharacteristic(BLERemoteService* pRemoteService, BLERemoteCharacteri
 
 
 
+
+
+
+//- - - - - - - - - Run Methods - - - - - - - - -
+
+void SendMessageToServer() {
+  if (shockSensHit) {
+    msg = "Treffer";
+    pRemoteChar_2->writeValue(msg, msg.length());
+  } else {
+    msg = "Kein Treffer";
+    pRemoteChar_2->writeValue(msg, msg.length());
+  }
+}
+void TryToConnect() {
+  if (doConnect == true) {
+    if (connectToServer()) {
+      Serial.println("We are now connected to the BLE Server.");
+    } else {
+      Serial.println("We have failed to connect to the server; there is nothin more we will do.");
+    }
+    doConnect = false;
+  } else {
+    Serial.print("Scan");
+    BLEDevice::getScan()->start(0);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
+  }
+}
+void SetLEDRing() {
+  if (!connected) {
+    colorWipe(ring.Color(0, 0, 255), 0, 6);
+  } 
+  if (onTheRow) {
+    colorWipe(baseColor, 0, 12);
+  } 
+  if(!onTheRow){
+    colorWipe(baseColor, 0, 1);
+  }
+
+
+  if (shockSensHit) {
+    ring.setPixelColor(6, ring.Color(255, 255, 255));
+  }
+
+  ring.show();
+}
 void colorWipe(uint32_t color, int wait, int count) {
   for (int i = 0; i < 12; i++) {
     if (count > i) {
-      ring.setPixelColor(i, baseColor);
+      ring.setPixelColor(i, color);
     } else {
       ring.setPixelColor(i, ring.Color(0, 0, 0));
     }
-    ring.show();
+    //ring.show();
     delay(wait);
   }
 }
