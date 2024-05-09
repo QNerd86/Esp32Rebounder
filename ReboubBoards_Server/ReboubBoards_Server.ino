@@ -51,7 +51,6 @@ class MyServerCallbacks : public BLEServerCallbacks {
     if (connectedClientsCounter < 3) {
       BLEDevice::startAdvertising();
     }
-    WhoIsConnected();
   };
 
   void onDisconnect(BLEServer* pServer) {
@@ -97,7 +96,8 @@ void loop() {
   if (deviceConnected) {
     pCharacteristic_1->setValue(counter);
     pCharacteristic_1->notify();
-    delay(10);
+    delay(100);
+    
     if (counter == 0 && shockSensHit) {
       Serial.println("(counter == 1 && shockSensHit)  - ");
       count = true;
@@ -252,4 +252,20 @@ String GetValue3() {
   if (retrieCounter >= 60)
     return "Treffer";
   return rxValue_3.c_str();
+}
+
+String GetValueX(BLECharacteristic* pCharacteristic) {
+  int retrieCounter = 0;
+  std::string rxValue = pCharacteristic->getValue();
+  while (rxValue == "null" && retrieCounter < 100) {
+    delay(50);
+    rxValue = pCharacteristic->getValue();
+    retrieCounter++;
+  }
+  Serial.print("GetValue3 retries " + String(retrieCounter));
+  Serial.println(rxValue.c_str());
+  pCharacteristic->setValue("null");
+  if (retrieCounter >= 60)
+    return "Treffer";
+  return rxValue.c_str();
 }

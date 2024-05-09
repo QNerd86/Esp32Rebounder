@@ -63,11 +63,13 @@ void loop() {
   bool shockSensHit = digitalRead(SCHOCK_SENS_PIN);
   bool onTheRow = (counter == deviceNumber && connected);
   //StateMachine
+
   if (connected) {
 
     if (shockSensHit) {
       msg = "Treffer";
       pRemoteChar_2->writeValue(msg, msg.length());
+      pRemoteChar_2->setValue("null");
     } else {
       msg = "Kein Treffer";
       pRemoteChar_2->writeValue(msg, msg.length());
